@@ -11,7 +11,7 @@ app = FastAPI(title="Addis Ababa City Bus Garage Management System - Cloud Versi
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
