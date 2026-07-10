@@ -10,8 +10,8 @@ app = FastAPI(title="Addis Ababa City Bus Garage Management System - Cloud Versi
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["https://aacb-gms.netlify.app"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
