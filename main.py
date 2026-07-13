@@ -106,7 +106,7 @@ def login(data: LoginInput):
         cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (data.username.strip().lower(), data.password))
         user = cursor.fetchone()
         if not user: raise HTTPException(401, "የተሳሳተ Username ወይም Password!")
-        if user['is_active'] == 0 or user['emp_status'] == 'Resigned': raise HTTPException(403, "ይህ አካውንት ተዘግቷል/ከስራ ለቋል!")
+        if user.get['is_active'] == 0 or user['emp_status'] == 'Resigned': raise HTTPException(403, "ይህ አካውንት ተዘግቷል/ከስራ ለቋል!")
         
         if not data.is_admin_login:
             if user['role'] not in ['PM_TECH', 'BD_TECH', 'MT_TECH', 'INSPECTION']:
