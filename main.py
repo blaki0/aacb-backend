@@ -74,7 +74,7 @@ except Exception as e: print(f"DB Update Error: {e}")
 
 # --- Pydantic Schemes ---
 class LoginInput(BaseModel):
-    username: str; password: str; depo_id: Optional[int] = None; is_admin_login: bool = False
+    username: str; password: str; depo_id: Optional[int] = None; is_admin_login: bool = True
 
 class UserAdd(BaseModel):
     username: str; password: str; full_name: str; staff_id: str; gender: str; rank_level: str; role: str; depo_id: int; group_id: Optional[int] = None
