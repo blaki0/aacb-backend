@@ -16,7 +16,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
- DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_oAtjGa1ZYnK7@ep-rapid-forest-atyx5bhs-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://neondb_owner:npg_oAtjGa1ZYnK7@ep-rapid-forest-atyx5bhs-pooler.c-9.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require")
 
 def get_db(): 
     return psycopg2.connect(DATABASE_URL, cursor_factory=RealDictCursor)
@@ -69,34 +69,79 @@ def init_db():
             """)
         conn.commit()
 
-try: init_db()
-except Exception as e: print(f"DB Update Error: {e}")
+try: 
+    init_db()
+except Exception as e: 
+    print(f"DB Update Error: {e}")
 
 # --- Pydantic Schemes ---
 class LoginInput(BaseModel):
-    username: str; password: str; depo_id: Optional[int] = None; is_admin_login: bool = False 
+    username: str
+    password: str
+    depo_id: Optional[int] = None
+    is_admin_login: bool = False 
 
 class UserAdd(BaseModel):
-    username: str; password: str; full_name: str; staff_id: str; gender: str; rank_level: str; role: str; depo_id: int; group_id: Optional[int] = None
-    can_add: int = 1; can_edit: int = 0; can_delete: int = 0
+    username: str
+    password: str
+    full_name: str
+    staff_id: str
+    gender: str
+    rank_level: str
+    role: str
+    depo_id: int
+    group_id: Optional[int] = None
+    can_add: int = 1
+    can_edit: int = 0
+    can_delete: int = 0
 
 class VehicleAdd(BaseModel):
-    plate_number: str; side_number: str; vehicle_type: str; assigned_group: int; depo_id: int; oil_limit_km: int; fuel_filter_limit_km: int; differential_oil_limit_km: int; steering_oil_limit_km: int; transmission_oil_limit_km: int
+    plate_number: str
+    side_number: str
+    vehicle_type: str
+    assigned_group: int
+    depo_id: int
+    oil_limit_km: int
+    fuel_filter_limit_km: int
+    differential_oil_limit_km: int
+    steering_oil_limit_km: int
+    transmission_oil_limit_km: int
 
 class MaintenanceLogInput(BaseModel):
-    side_number: str; maintenance_type: str; entered_km: int; work_details: str; username: str; depo_id: int; co_workers: Optional[str] = ""
+    side_number: str
+    maintenance_type: str
+    entered_km: int
+    work_details: str
+    username: str
+    depo_id: int
+    co_workers: Optional[str] = ""
 
 class InspectionProcessInput(BaseModel):
-    log_id: int; status: str; remark: Optional[str] = ""; inspector_username: str
+    log_id: int
+    status: str
+    remark: Optional[str] = ""
+    inspector_username: str
 
 class TransferEmployeeInput(BaseModel):
-    username: str; new_depo_id: int; new_group_id: Optional[int] = None; new_role: str; admin_username: str; reason: str
+    username: str
+    new_depo_id: int
+    new_group_id: Optional[int] = None
+    new_role: str
+    admin_username: str
+    reason: str
 
 class ChangeStatusInput(BaseModel):
-    username: str; new_status: str; admin_username: str; reason: str
+    username: str
+    new_status: str
+    admin_username: str
+    reason: str
 
 class PasswordChangeInput(BaseModel):
-    username: str; old_password: Optional[str] = None; new_password: str; is_reset: bool = False; admin_username: Optional[str] = None
+    username: str
+    old_password: Optional[str] = None
+    new_password: str
+    is_reset: bool = False
+    admin_username: Optional[str] = None
 
 # --- API Endpoints ---
 
@@ -105,11 +150,15 @@ def login(data: LoginInput):
     with get_db() as conn, conn.cursor() as cursor:
         cursor.execute("SELECT * FROM users WHERE username = %s AND password = %s", (data.username.strip().lower(), data.password))
         user = cursor.fetchone()
-        if not user: raise HTTPException(401, "የተሳሳተ Username ወይም Password!")
-        if user.get['is_active'] == 0 or user.get['emp_status'] == 'Resigned': raise HTTPException(403, "ይህ አካውንት ተዘግቷል/ከስራ ለቋል!")
+        if not user: 
+            raise HTTPException(401, "የተሳሳተ Username ወይም Password!")
         
+        # 🛠️ ክብ ቅንፍ በመጠቀም የተስተካከለ ስህተት (Fixing .get syntax error)
+        if user.get('is_active') == 0 or user.get('emp_status') == 'Resigned': 
+            raise HTTPException(403, "ይህ አካውንት ተዘግቷል/ከስራ ለቋል!")
+
         if not data.is_admin_login:
-            if user.get['role'] not in ['PM_TECH', 'BD_TECH', 'MT_TECH', 'INSPECTION']:
+            if user.get('role') not in ['PM_TECH', 'BD_TECH', 'MT_TECH', 'INSPECTION']:
                 raise HTTPException(403, "የባለሙያ መግቢያን ይጠቀሙ!")
             if user['depo_id'] != data.depo_id:
                 raise HTTPException(403, f"እርስዎ የዲፖ {data.depo_id} ባለሙያ አይደሉም!")
@@ -123,14 +172,17 @@ def submit_log(log: MaintenanceLogInput):
     with get_db() as conn, conn.cursor() as cursor:
         cursor.execute("SELECT * FROM users WHERE username = %s", (log.username.lower(),))
         user = cursor.fetchone()
-        if not user or user['is_active'] == 0: raise HTTPException(401, "የእርስዎ መለያ አልተገኘም ወይም ታግዷል!")
-        if user['can_add'] == 0: raise HTTPException(403, "መረጃ የመመዝገብ መብትዎ በአድሚን ታግዷል!")
+        if not user or user['is_active'] == 0: 
+            raise HTTPException(401, "የእርስዎ መለያ አልተገኘም ወይም ታግዷል!")
+        if user['can_add'] == 0: 
+            raise HTTPException(403, "መረጃ የመመዝገብ መብትዎ በአድሚን ታግዷል!")
         
         cursor.execute("SELECT * FROM vehicles WHERE side_number = %s", (log.side_number.upper(),))
         veh = cursor.fetchone()
-        if not veh: raise HTTPException(404, "ይህ የጎን ቁጥር ያለው መኪና በሲስተሙ አልተመዘገበም!")
+        if not veh: 
+            raise HTTPException(404, "ይህ የጎን ቁጥር ያለው መኪና በሲስተሙ አልተመዘገበም!")
         
-        # Data Validation 1: Check Mileage (KM Protection Guard)
+        # Data Validation: Check Mileage (KM Protection Guard)
         cursor.execute("SELECT entered_km FROM maintenance_logs WHERE side_number = %s ORDER BY entered_km DESC LIMIT 1", (log.side_number.upper(),))
         last_log = cursor.fetchone()
         if last_log and log.entered_km < last_log['entered_km']:
@@ -147,7 +199,8 @@ def submit_log(log: MaintenanceLogInput):
                 
             limits = {"የሞተር ዘይት": veh['oil_limit_km'], "የነዳጅ ፊልትር": veh['fuel_filter_limit_km']}
             overdue = [f"{lbl} ({log.entered_km - lim} ኪ.ሜ አልፏል)" for lbl, lim in limits.items() if lim > 0 and log.entered_km >= lim]
-            if overdue: alert = "ማስጠንቀቂያ! " + ", ".join(overdue)
+            if overdue: 
+                alert = "ማስጠንቀቂያ! " + ", ".join(overdue)
 
         cursor.execute("""
             INSERT INTO maintenance_logs (side_number, maintenance_type, entered_km, work_details, logged_by_user, depo_id, co_workers, status)
@@ -207,9 +260,10 @@ def change_employee_status(data: ChangeStatusInput):
 @app.get("/api/profile/employee/{username}")
 def get_employee_profile(username: str):
     with get_db() as conn, conn.cursor() as cursor:
-        cursor.execute("SELECT id, username, full_name, staff_id, role, depo_id, group_id, emp_status FROM users WHERE username = %s", (username.lower(),))
+        cursor.execute("SELECT id, username, full_name, staff_id, role, depo_id, group_id, emp_status, rank_level FROM users WHERE username = %s", (username.lower(),))
         info = cursor.fetchone()
-        if not info: raise HTTPException(404, "ሰራተኛው አልተገኘም!")
+        if not info: 
+            raise HTTPException(404, "ሰራተኛው አልተገኘም!")
         
         cursor.execute("SELECT * FROM user_history WHERE username = %s ORDER BY created_at DESC", (username.lower(),))
         history = cursor.fetchall()
@@ -220,7 +274,8 @@ def get_vehicle_profile(side_number: str):
     with get_db() as conn, conn.cursor() as cursor:
         cursor.execute("SELECT * FROM vehicles WHERE side_number = %s", (side_number.upper(),))
         info = cursor.fetchone()
-        if not info: raise HTTPException(404, "መኪናው አልተገኘም!")
+        if not info: 
+            raise HTTPException(404, "መኪናው አልተገኘም!")
         
         cursor.execute("""
             SELECT l.*, u.full_name FROM maintenance_logs l 
@@ -241,15 +296,24 @@ def change_password(data: PasswordChangeInput):
             cursor.execute("UPDATE users SET password = %s WHERE username = %s", (data.new_password, data.username.lower()))
         else:
             cursor.execute("SELECT id FROM users WHERE username = %s AND password = %s", (data.username.lower(), data.old_password))
-            if not cursor.fetchone(): raise HTTPException(401, "የድሮው የይለፍ ቃል ተሳስቷል!")
+            if not cursor.fetchone(): 
+                raise HTTPException(401, "የድሮው የይለፍ ቃል ተሳስቷል!")
             cursor.execute("UPDATE users SET password = %s WHERE username = %s", (data.new_password, data.username.lower()))
         conn.commit()
         return {"status": "success", "message": "የይለፍ ቃል ተቀይሯል!"}
 
+# 🆕 የ PM ግሩፕ መኪኖችን ዝርዝር ለይቶ ለማውጣት የተጨመረ አዲስ ኤፒአይ
+@app.get("/api/vehicles")
+def get_vehicles(depo_id: int):
+    with get_db() as conn, conn.cursor() as cursor:
+        cursor.execute("SELECT * FROM vehicles WHERE depo_id = %s AND status = 'Active'", (depo_id,))
+        return cursor.fetchall()
+
 @app.get("/api/logs")
 def get_logs(depo_id: int, role: str, side_number: Optional[str] = None, filter_status: Optional[str] = "ALL"):
     with get_db() as conn, conn.cursor() as cursor:
-        query = "SELECT l.*, u.full_name FROM maintenance_logs l JOIN users u ON l.logged_by_user = u.username WHERE 1=1"
+        # 🛠️ u.username ን 'username' በሚል ስያሜ አውጥተነዋል (እንዲሁም l.logged_by_user)
+        query = "SELECT l.*, l.logged_by_user AS username, u.full_name FROM maintenance_logs l JOIN users u ON l.logged_by_user = u.username WHERE 1=1"
         params = []
         if role != 'SUPER_ADMIN':
             query += " AND l.depo_id = %s"; params.append(depo_id)
@@ -274,7 +338,8 @@ def delete_log(log_id: int, username: str):
             
         cursor.execute("SELECT created_at FROM maintenance_logs WHERE id = %s", (log_id,))
         log = cursor.fetchone()
-        if not log: raise HTTPException(404, "መዝገብ አልተገኘም!")
+        if not log: 
+            raise HTTPException(404, "መዝገብ አልተገኘም!")
         if datetime.now() - log['created_at'] > timedelta(days=1) and user['role'] != 'SUPER_ADMIN':
             raise HTTPException(403, "ከ1 ቀን በላይ የቆየ መረጃ ማጥፋት የሚችለው ዋና ሱፐር አድሚን ብቻ ነው!")
             
@@ -288,7 +353,8 @@ def add_user(user: UserAdd):
         role = user.role.strip().upper()
         if role == "PM_TECH" and (user.group_id is None or user.group_id not in [1, 2, 3, 4]):
             raise HTTPException(400, "PM ባለሙያ ከ4ቱ አንዱ ግሩፕ ሊሰጠው ይገባል!")
-        if role in ["BD_TECH", "MT_TECH", "INSPECTION", "DEPO_ADMIN"]: user.group_id = None
+        if role in ["BD_TECH", "MT_TECH", "INSPECTION", "DEPO_ADMIN"]: 
+            user.group_id = None
         
         try:
             cursor.execute("""
